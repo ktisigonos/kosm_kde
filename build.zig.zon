@@ -1,0 +1,25 @@
+.{
+    .name = .kosm_kde,
+    .version = "0.0.0",
+    .fingerprint = 0x92ec935a0fc92d10, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.17.0",
+    .dependencies = .{
+        .kosm_ini = .{
+            .url = "git+https://git.nnstdios.com/nnra6864/kosm_ini?ref=master#a33c98926a315b74ef1b3932deac1b90673e8cb1",
+            .hash = "kosm_ini-0.0.0-qA7bnX-4AAApae5E-Faq8l7OlHOjBQL8jc-mu0keiiUx",
+        },
+        .kosm = .{
+            .url = "git+https://git.nnstdios.com/nnra6864/kosm?ref=master#0418cc09915e3f7e4d07ac91fb59a2d5b6c26374",
+            .hash = "kosm-0.0.0-YCShskebCgC9OlIjz2kMaqwx-iAKQtm7ur3WnP5_KW70",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "root.zig",
+        "App.zig",
+        "Set.zig",
+        "WindowManager.zig",
+        "README.md",
+    },
+}
