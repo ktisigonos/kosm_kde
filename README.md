@@ -4,7 +4,9 @@ KDE for kosm: the theme's colors as a KDE color scheme, and in kdeglobals, so KD
 using KDE's platform theme follow the kosmos, inside Plasma or not.
 
 - `~/.local/share/color-schemes/kosm.colors`: the scheme, generated whole; Plasma's settings
-  list it as `kosm`.
+  list it under the theme's `name` (`Theme.name`), or the kosmos' name when that is null. With
+  the theme's `files = .per_kosmos` the file is named after the kosmos instead
+  (`krystallos.dark.colors`), so each kosmos applied keeps its own scheme.
 - `~/.config/kdeglobals`: a block between `# kosm:begin kosm` and `# kosm:end` at the end,
   selecting the scheme and holding its colors. Apps outside Plasma read their colors from
   kdeglobals itself, not from the scheme, and KDE reads the last value of a key, so the block
@@ -24,9 +26,10 @@ warnings and good news, focus and hover outlines cyan. Focused title bars are ra
 
 | Field | Default |
 |---|---|
-| `scheme` | `~/.local/share/color-schemes/kosm.colors`; null writes no scheme |
+| `scheme` | `~/.local/share/color-schemes/{name}.colors`; `{name}` is `kosm`, or the kosmos' name with `files = .per_kosmos`; null writes no scheme |
+| `files` | the theme's `files`: `.shared` or `.per_kosmos` |
 | `globals` | `~/.config/kdeglobals`, created when missing; null leaves it alone |
-| `name` | the scheme file's name without `.colors` |
+| `name` | the theme's `name`, or the name kosm applies the kosmos under: the scheme's `Name`. `ColorScheme` is always the scheme file's name |
 | `format` | the adapter's: `r,g,b` |
 | `window`, `view`, `button`, `selection`, `tooltip`, `complementary`, `header`, `header_inactive` | each a set of `background_normal`, `background_alternate`, `foreground_normal`, `foreground_inactive`, `foreground_active`, `foreground_link`, `foreground_visited`, `foreground_negative`, `foreground_neutral`, `foreground_positive`, `decoration_focus`, `decoration_hover`; null keys are not written |
 | `window_manager` | `[WM]`: `active_background`, `active_foreground`, `active_blend`, `inactive_background`, `inactive_foreground`, `inactive_blend` |

@@ -7,14 +7,17 @@ const App = @This();
 const std = @import("std");
 const kosm = @import("kosm");
 
-/// The color scheme file kosm owns, listed in Plasma's settings. null: not written.
-/// Default: `~/.local/share/color-schemes/kosm.colors`.
-scheme: ?[]const u8 = "~/.local/share/color-schemes/kosm.colors",
+/// The color scheme file kosm owns, listed in Plasma's settings; `{name}` is filled as `files`
+/// says. null: not written. Default: `~/.local/share/color-schemes/{name}.colors`.
+scheme: ?[]const u8 = "~/.local/share/color-schemes/{name}.colors",
+/// How `{name}` in `scheme` is filled: `kosm`, or the kosmos' name. Default: the theme's `files`.
+files: kosm.Theme.Files = .shared,
 /// KDE's global config, holding the block that selects the scheme and holds its colors; created
 /// when missing. null: not written. Default: `~/.config/kdeglobals`.
 globals: ?[]const u8 = "~/.config/kdeglobals",
-/// The scheme's name (`[General] Name` and `ColorScheme`). Default: the scheme file's name
-/// without `.colors`, `kosm`.
+/// The name Plasma's settings show for the scheme (`[General] Name`). null (default): the
+/// theme's `name`, or the name kosm applies the kosmos under. KDE selects the scheme by its
+/// file's name (`ColorScheme`), whatever this says.
 name: ?[]const u8 = null,
 /// How colors are spelled. Null fields take the adapter's: `r,g,b`.
 format: kosm.Format = .{},
@@ -59,6 +62,8 @@ pub fn from(theme: kosm.Theme) App {
     selection.foreground_active = variations.contrast.on.apply(palette.cyan);
     const muted = variations.emphasis.muted.apply(foreground);
     return .{
+        .files = theme.files,
+        .name = theme.name,
         .window = .on(theme, background, raised),
         .view = .on(theme, sunken, background),
         .button = .on(theme, raised, overlay),
@@ -78,21 +83,22 @@ pub fn from(theme: kosm.Theme) App {
     };
 }
 
-/// Generates `scheme`, then writes block `kosm` of `globals` with the same colors and the
-/// scheme's name.
+/// Generates `scheme`, then writes block `kosm` of `globals` with the same colors, selecting
+/// the scheme by its file's name.
 pub fn apply(self: App, output: *kosm.Output) !void {
-    const name = self.name orelse if (self.scheme) |scheme| std.fs.path.stem(scheme) else "kosm";
+    const scheme_file = if (self.scheme) |scheme| try output.namedFile(scheme, self.files) else null;
+    const color_scheme = if (scheme_file) |scheme| std.Io.Dir.path.stem(scheme) else try output.namedFile("{name}", self.files);
     const colors = try self.sections(output.allocator);
-    if (self.scheme) |scheme| {
+    if (scheme_file) |scheme| {
         const general: kosm.Value.Entry = .{ .key = "General", .value = try table(output.allocator, &.{
-            .{ .key = "ColorScheme", .value = .{ .string = name } },
-            .{ .key = "Name", .value = .{ .string = name } },
+            .{ .key = "ColorScheme", .value = .{ .string = color_scheme } },
+            .{ .key = "Name", .value = .{ .string = try output.displayName(scheme, self.name) } },
         }) };
         try output.generate(.{ .file = scheme, .lang = "kde", .format = self.format }, kosm.Value{ .table = try prepend(output.allocator, general, colors) });
     }
     if (self.globals) |globals| {
         const general: kosm.Value.Entry = .{ .key = "General", .value = try table(output.allocator, &.{
-            .{ .key = "ColorScheme", .value = .{ .string = name } },
+            .{ .key = "ColorScheme", .value = .{ .string = color_scheme } },
         }) };
         try output.block(.{ .file = globals, .id = "kosm", .lang = "kde", .format = self.format }, kosm.Value{ .table = try prepend(output.allocator, general, colors) });
     }
@@ -186,6 +192,7 @@ const Fixture = struct {
             .diagnostics = &fixture.diagnostics,
             .warnings = &fixture.warnings,
             .app = "kde",
+            .kosmos = "krystallos.dark",
         };
     }
 
@@ -216,7 +223,7 @@ test "the scheme and the kdeglobals block hold the set colors, sets without any 
     try testing.expectEqualStrings(
         \\[General]
         \\ColorScheme=kosm
-        \\Name=kosm
+        \\Name=krystallos.dark
         \\
         \\[Colors:Window]
         \\BackgroundNormal=4,28,38
@@ -232,6 +239,24 @@ test "the scheme and the kdeglobals block hold the set colors, sets without any 
     const globals = fixture.planned("~/.config/kdeglobals");
     try testing.expect(std.mem.startsWith(u8, globals, "[General]\nColorScheme=Ricer\n\n[KDE]\nwidgetStyle=Breeze\n"));
     try testing.expect(std.mem.indexOf(u8, globals, "# kosm:begin kosm\n[General]\nColorScheme=kosm\n\n[Colors:Window]\nBackgroundNormal=4,28,38\n") != null);
+}
+
+test "per kosmos, the scheme is a file of the kosmos' own, selected by it and showing the theme's name" {
+    var fixture: Fixture = undefined;
+    try fixture.init();
+    defer fixture.deinit();
+    const app: App = .{ .files = .per_kosmos, .name = "Krystallos", .window = .{ .background_normal = kosm.hex("041c26") } };
+    try app.apply(&fixture.output);
+    const scheme = fixture.planned("~/.local/share/color-schemes/krystallos.dark.colors");
+    try testing.expect(std.mem.startsWith(u8, scheme, "[General]\nColorScheme=krystallos.dark\nName=Krystallos\n"));
+    try testing.expect(std.mem.indexOf(u8, fixture.planned("~/.config/kdeglobals"), "# kosm:begin kosm\n[General]\nColorScheme=krystallos.dark\n") != null);
+
+    var without_scheme: Fixture = undefined;
+    try without_scheme.init();
+    defer without_scheme.deinit();
+    const globals_only: App = .{ .scheme = null, .files = .per_kosmos };
+    try globals_only.apply(&without_scheme.output);
+    try testing.expect(std.mem.indexOf(u8, without_scheme.planned("~/.config/kdeglobals"), "ColorScheme=krystallos.dark\n") != null);
 }
 
 test "from fills every set, and the selection's text is readable on cyan" {
