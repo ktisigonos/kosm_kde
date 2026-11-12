@@ -45,21 +45,20 @@ pub const Set = @import("Set.zig");
 /// Title bar colors.
 pub const WindowManager = @import("WindowManager.zig");
 
-/// Colors from the theme: windows, tooltips and the complementary set on black (white in light
-/// mode), views sunken, buttons and headers raised, selections cyan with readable text from the
+/// Colors from the theme: windows, tooltips and the complementary set on the background role,
+/// views sunken, buttons and headers raised, selections the accent with readable text from the
 /// theme's `contrast.on`; title bars raised when focused.
 pub fn from(theme: kosm.Theme) App {
-    const palette = theme.palette;
     const variations = theme.variations;
-    const foreground = if (theme.mode == .dark) palette.white else palette.black;
-    const background = theme.asBackground(if (theme.mode == .dark) palette.black else palette.white);
+    const foreground = theme.roles.foreground;
+    const background = theme.asBackground(theme.roles.background);
     const raised = variations.surface.raised.apply(background);
     const sunken = variations.surface.sunken.apply(background);
     const overlay = variations.surface.overlay.apply(background);
-    var selection: Set = .on(theme, palette.cyan, variations.lightness.dark.apply(palette.cyan));
-    selection.foreground_normal = variations.contrast.on.apply(palette.cyan);
-    selection.foreground_inactive = variations.contrast.on_muted.apply(palette.cyan);
-    selection.foreground_active = variations.contrast.on.apply(palette.cyan);
+    var selection: Set = .on(theme, theme.roles.accent, variations.lightness.dark.apply(theme.roles.accent));
+    selection.foreground_normal = variations.contrast.on.apply(theme.roles.accent);
+    selection.foreground_inactive = variations.contrast.on_muted.apply(theme.roles.accent);
+    selection.foreground_active = variations.contrast.on.apply(theme.roles.accent);
     const muted = variations.emphasis.muted.apply(foreground);
     return .{
         .files = theme.files,
@@ -260,7 +259,7 @@ test "per kosmos, the scheme is a file of the kosmos' own, selected by it and sh
 }
 
 test "from fills every set, and the selection's text is readable on cyan" {
-    const theme = kosm.Theme.from(.{ .black = kosm.hex("041c26"), .white = kosm.hex("a3c5cc"), .cyan = kosm.hex("2e9990") }, .dark);
+    const theme = kosm.Theme.from(.{ .palette = .{ .black = kosm.hex("041c26"), .white = kosm.hex("a3c5cc"), .cyan = kosm.hex("2e9990") }, .mode = .dark });
     const app = from(theme);
     inline for (.{ app.window, app.view, app.button, app.selection, app.tooltip, app.complementary, app.header, app.header_inactive }) |set| {
         inline for (@typeInfo(Set).@"struct".field_names) |field| try testing.expect(@field(set, field) != null);

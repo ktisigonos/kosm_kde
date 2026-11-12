@@ -33,24 +33,24 @@ decoration_focus: ?Color = null,
 decoration_hover: ?Color = null,
 
 /// A set on `background`, `alternate` for its alternating rows, with the theme's text and
-/// state colors: text white (black in light mode), muted by the theme's emphasis when inactive;
-/// links blue, visited ones purple; red, yellow and green for bad, warning and good news; the
-/// focus and hover outlines cyan.
+/// state colors: text the foreground role, muted by the theme's emphasis when inactive, active
+/// text the accent; links the link role, visited ones purple; the error, warning and success
+/// roles for bad, warning and good news; the focus and hover outlines the accent.
 pub fn on(theme: kosm.Theme, background: Color, alternate: Color) Set {
     const palette = theme.palette;
-    const foreground = if (theme.mode == .dark) palette.white else palette.black;
+    const foreground = theme.roles.foreground;
     return .{
         .background_normal = background,
         .background_alternate = alternate,
         .foreground_normal = foreground,
         .foreground_inactive = theme.variations.emphasis.muted.apply(foreground),
-        .foreground_active = palette.cyan,
-        .foreground_link = palette.blue,
+        .foreground_active = theme.roles.accent,
+        .foreground_link = theme.roles.link,
         .foreground_visited = palette.purple,
-        .foreground_negative = palette.red,
-        .foreground_neutral = palette.yellow,
-        .foreground_positive = palette.green,
-        .decoration_focus = palette.cyan,
-        .decoration_hover = palette.cyan,
+        .foreground_negative = theme.roles.@"error",
+        .foreground_neutral = theme.roles.warning,
+        .foreground_positive = theme.roles.success,
+        .decoration_focus = theme.roles.accent,
+        .decoration_hover = theme.roles.accent,
     };
 }
