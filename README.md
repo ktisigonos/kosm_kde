@@ -12,6 +12,11 @@ using KDE's platform theme follow the kosmos, inside Plasma or not.
   kdeglobals itself, not from the scheme, and KDE reads the last value of a key, so the block
   wins over what the file says earlier. The rest of the file stays yours.
 
+- `~/.config/*rc` (`apps`): an app that picked a scheme of its own (Dolphin's
+  `[UiSettings] ColorScheme`, Krita's `[theme] Theme`, which Krita picks by the scheme's
+  `Name`) would ignore kdeglobals, so that choice becomes kosm's scheme. Only choices already
+  in a file change; apps that never picked one follow kdeglobals anyway.
+
 KDE rewrites kdeglobals whenever a KDE settings page saves it, dropping comments: the markers
 go, the values stay, and the next apply writes a new block. Running apps read the colors at
 start.
@@ -30,6 +35,7 @@ accent. Focused title bars are raised.
 | `scheme` | `~/.local/share/color-schemes/{name}.colors`; `{name}` is `kosm`, or the kosmos' name with `files = .per_kosmos`; null writes no scheme |
 | `files` | the theme's `files`: `.shared` or `.per_kosmos` |
 | `globals` | `~/.config/kdeglobals`, created when missing; null leaves it alone |
+| `apps` | `~/.config/*rc`; null leaves the apps' own choices alone |
 | `name` | the theme's `name`, or the name kosm applies the kosmos under: the scheme's `Name`. `ColorScheme` is always the scheme file's name |
 | `format` | the adapter's: `r,g,b` |
 | `window`, `view`, `button`, `selection`, `tooltip`, `complementary`, `header`, `header_inactive` | each a set of `background_normal`, `background_alternate`, `foreground_normal`, `foreground_inactive`, `foreground_active`, `foreground_link`, `foreground_visited`, `foreground_negative`, `foreground_neutral`, `foreground_positive`, `decoration_focus`, `decoration_hover`; null keys are not written |

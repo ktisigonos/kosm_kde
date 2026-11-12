@@ -15,6 +15,11 @@ files: kosm.Theme.Files = .shared,
 /// KDE's global config, holding the block that selects the scheme and holds its colors; created
 /// when missing. null: not written. Default: `~/.config/kdeglobals`.
 globals: ?[]const u8 = "~/.config/kdeglobals",
+/// The config files of KDE apps, a glob: in each, an app's own color scheme choice
+/// (`[UiSettings] ColorScheme`) becomes the scheme, and Krita's (`[theme] Theme` in `kritarc`,
+/// which Krita picks by the scheme's `name`) too, so no app keeps showing another scheme. Only
+/// choices already there change. null: left alone. Default: `~/.config/*rc`.
+apps: ?[]const u8 = "~/.config/*rc",
 /// The name Plasma's settings show for the scheme (`[General] Name`). null (default): the
 /// theme's `name`, or the name kosm applies the kosmos under. KDE selects the scheme by its
 /// file's name (`ColorScheme`), whatever this says.
@@ -83,7 +88,7 @@ pub fn from(theme: kosm.Theme) App {
 }
 
 /// Generates `scheme`, then writes block `kosm` of `globals` with the same colors, selecting
-/// the scheme by its file's name.
+/// the scheme by its file's name, then selects it in the apps' own choices in `apps`.
 pub fn apply(self: App, output: *kosm.Output) !void {
     const scheme_file = if (self.scheme) |scheme| try output.namedFile(scheme, self.files) else null;
     const color_scheme = if (scheme_file) |scheme| std.Io.Dir.path.stem(scheme) else try output.namedFile("{name}", self.files);
@@ -100,6 +105,25 @@ pub fn apply(self: App, output: *kosm.Output) !void {
             .{ .key = "ColorScheme", .value = .{ .string = color_scheme } },
         }) };
         try output.block(.{ .file = globals, .id = "kosm", .lang = "kde", .format = self.format }, kosm.Value{ .table = try prepend(output.allocator, general, colors) });
+    }
+    if (self.apps) |apps| {
+        const name = if (scheme_file) |scheme| try output.displayName(scheme, self.name) else null;
+        try selectInApps(output, apps, color_scheme, name);
+    }
+}
+
+/// Sets each app's own scheme choice in the files `apps` picks to `color_scheme`, and Krita's
+/// to `name` unless it is null.
+fn selectInApps(output: *kosm.Output, apps: []const u8, color_scheme: []const u8, name: ?[]const u8) !void {
+    var files = output.edit(.{ .files = apps, .lang = "kde" }) catch |err| switch (err) {
+        // No KDE app has saved its settings yet, so none holds a choice to change.
+        error.NoFile => return,
+        else => return err,
+    };
+    for (try files.nodes("UiSettings.ColorScheme")) |match| try files.replace(match, color_scheme);
+    const krita_name = name orelse return;
+    for (try files.nodes("theme.Theme")) |match| {
+        if (std.mem.eql(u8, std.Io.Dir.path.basename(match.file), "kritarc")) try files.replace(match, krita_name);
     }
 }
 
@@ -256,6 +280,28 @@ test "per kosmos, the scheme is a file of the kosmos' own, selected by it and sh
     const globals_only: App = .{ .scheme = null, .files = .per_kosmos };
     try globals_only.apply(&without_scheme.output);
     try testing.expect(std.mem.indexOf(u8, without_scheme.planned("~/.config/kdeglobals"), "ColorScheme=krystallos.dark\n") != null);
+}
+
+test "apps that chose a scheme of their own are switched to kosm's, Krita by the scheme's name" {
+    var fixture: Fixture = undefined;
+    try fixture.init();
+    defer fixture.deinit();
+    try fixture.tmp.dir.writeFile(testing.io, .{ .sub_path = ".config/dolphinrc", .data = "[General]\nViewMode=1\n\n[UiSettings]\nColorScheme=Ricer\n" });
+    try fixture.tmp.dir.writeFile(testing.io, .{ .sub_path = ".config/kritarc", .data = "[theme]\nTheme=Ricer\n" });
+    try fixture.tmp.dir.writeFile(testing.io, .{ .sub_path = ".config/arkrc", .data = "[General]\nLockSidebar=true\n\n[theme]\nTheme=Other\n" });
+    const app: App = .{ .name = "Everforest", .window = .{ .background_normal = kosm.hex("041c26") } };
+    try app.apply(&fixture.output);
+    try testing.expectEqualStrings("[General]\nViewMode=1\n\n[UiSettings]\nColorScheme=kosm\n", fixture.planned("~/.config/dolphinrc"));
+    try testing.expectEqualStrings("[theme]\nTheme=Everforest\n", fixture.planned("~/.config/kritarc"));
+    try testing.expectEqualStrings("[General]\nLockSidebar=true\n\n[theme]\nTheme=Other\n", fixture.planned("~/.config/arkrc"));
+
+    var without_scheme: Fixture = undefined;
+    try without_scheme.init();
+    defer without_scheme.deinit();
+    try without_scheme.tmp.dir.writeFile(testing.io, .{ .sub_path = ".config/kritarc", .data = "[theme]\nTheme=Ricer\n" });
+    const globals_only: App = .{ .scheme = null };
+    try globals_only.apply(&without_scheme.output);
+    try testing.expectEqualStrings("[theme]\nTheme=Ricer\n", without_scheme.planned("~/.config/kritarc"));
 }
 
 test "from fills every set, and the selection's text is readable on cyan" {
