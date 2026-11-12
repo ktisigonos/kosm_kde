@@ -286,12 +286,12 @@ test "apps that chose a scheme of their own are switched to kosm's, Krita by the
     var fixture: Fixture = undefined;
     try fixture.init();
     defer fixture.deinit();
-    try fixture.tmp.dir.writeFile(testing.io, .{ .sub_path = ".config/dolphinrc", .data = "[General]\nViewMode=1\n\n[UiSettings]\nColorScheme=Ricer\n" });
+    try fixture.tmp.dir.writeFile(testing.io, .{ .sub_path = ".config/dolphinrc", .data = "MenuBar=Disabled\n\n[General]\nViewMode=1\n\n[UiSettings]\nColorScheme=Ricer\n" });
     try fixture.tmp.dir.writeFile(testing.io, .{ .sub_path = ".config/kritarc", .data = "[theme]\nTheme=Ricer\n" });
     try fixture.tmp.dir.writeFile(testing.io, .{ .sub_path = ".config/arkrc", .data = "[General]\nLockSidebar=true\n\n[theme]\nTheme=Other\n" });
     const app: App = .{ .name = "Everforest", .window = .{ .background_normal = kosm.hex("041c26") } };
     try app.apply(&fixture.output);
-    try testing.expectEqualStrings("[General]\nViewMode=1\n\n[UiSettings]\nColorScheme=kosm\n", fixture.planned("~/.config/dolphinrc"));
+    try testing.expectEqualStrings("MenuBar=Disabled\n\n[General]\nViewMode=1\n\n[UiSettings]\nColorScheme=kosm\n", fixture.planned("~/.config/dolphinrc"));
     try testing.expectEqualStrings("[theme]\nTheme=Everforest\n", fixture.planned("~/.config/kritarc"));
     try testing.expectEqualStrings("[General]\nLockSidebar=true\n\n[theme]\nTheme=Other\n", fixture.planned("~/.config/arkrc"));
 

@@ -7,13 +7,13 @@ const kosm_ini = @import("kosm_ini");
 pub const App = @import("App.zig");
 /// Colors from the theme.
 pub const from = App.from;
-/// KDE's INI: `key=value`, `[A][B]` nested groups, `#` comments and `r,g,b` colors.
+/// KDE's INI: `key=value`, `[A][B]` nested groups, `#` comments and `r,g,b` colors. Keys
+/// before the first group belong to KConfig's default group, as Dolphin and Krita write them.
 pub const adapter = kosm_ini.dialect(.{
     .name = "kde",
     .extensions = &.{".colors"},
     .default_format = .{ .color = .init("{},{},{}", &.{ .red_255, .green_255, .blue_255 }), .boolean = .true_false },
     .comments = &.{"#"},
-    .top_level_keys = false,
     .separator = "=",
 });
 
