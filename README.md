@@ -37,6 +37,7 @@ accent. Focused title bars are raised.
 | `globals` | `~/.config/kdeglobals`, created when missing; null leaves it alone |
 | `apps` | `~/.config/*rc`; null leaves the apps' own choices alone |
 | `name` | the theme's `name`, or the name kosm applies the kosmos under: the scheme's `Name`. `ColorScheme` is always the scheme file's name |
+| `icon_theme` | null: not written; else `[Icons] Theme` in the kdeglobals block, the icon theme's folder name |
 | `format` | the adapter's: `r,g,b` |
 | `window`, `view`, `button`, `selection`, `tooltip`, `complementary`, `header`, `header_inactive` | each a set of `background_normal`, `background_alternate`, `foreground_normal`, `foreground_inactive`, `foreground_active`, `foreground_link`, `foreground_visited`, `foreground_negative`, `foreground_neutral`, `foreground_positive`, `decoration_focus`, `decoration_hover`; null keys are not written |
 | `window_manager` | `[WM]`: `active_background`, `active_foreground`, `active_blend`, `inactive_background`, `inactive_foreground`, `inactive_blend` |

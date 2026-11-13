@@ -24,6 +24,9 @@ apps: ?[]const u8 = "~/.config/*rc",
 /// theme's `name`, or the name kosm applies the kosmos under. KDE selects the scheme by its
 /// file's name (`ColorScheme`), whatever this says.
 name: ?[]const u8 = null,
+/// The icon theme KDE apps use (`[Icons] Theme`, in `globals`' block), by its folder name.
+/// null (default): not written.
+icon_theme: ?[]const u8 = null,
 /// How colors are spelled. Null fields take the adapter's: `r,g,b`.
 format: kosm.Format = .{},
 /// Windows and their widgets.
@@ -104,7 +107,13 @@ pub fn apply(self: App, output: *kosm.Output) !void {
         const general: kosm.Value.Entry = .{ .key = "General", .value = try table(output.allocator, &.{
             .{ .key = "ColorScheme", .value = .{ .string = color_scheme } },
         }) };
-        try output.block(.{ .file = globals, .id = "kosm", .lang = "kde", .format = self.format }, kosm.Value{ .table = try prepend(output.allocator, general, colors) });
+        var globals_entries: std.ArrayList(kosm.Value.Entry) = .empty;
+        try globals_entries.append(output.allocator, general);
+        try globals_entries.appendSlice(output.allocator, colors);
+        if (self.icon_theme) |icon_theme| try globals_entries.append(output.allocator, .{ .key = "Icons", .value = try table(output.allocator, &.{
+            .{ .key = "Theme", .value = .{ .string = icon_theme } },
+        }) });
+        try output.block(.{ .file = globals, .id = "kosm", .lang = "kde", .format = self.format }, kosm.Value{ .table = globals_entries.items });
     }
     if (self.apps) |apps| {
         const name = if (scheme_file) |scheme| try output.displayName(scheme, self.name) else null;
@@ -262,6 +271,17 @@ test "the scheme and the kdeglobals block hold the set colors, sets without any 
     const globals = fixture.planned("~/.config/kdeglobals");
     try testing.expect(std.mem.startsWith(u8, globals, "[General]\nColorScheme=Ricer\n\n[KDE]\nwidgetStyle=Breeze\n"));
     try testing.expect(std.mem.indexOf(u8, globals, "# kosm:begin kosm\n[General]\nColorScheme=kosm\n\n[Colors:Window]\nBackgroundNormal=4,28,38\n") != null);
+    try testing.expect(std.mem.indexOf(u8, globals, "[Icons]") == null);
+}
+
+test "the icon theme goes into the kdeglobals block only" {
+    var fixture: Fixture = undefined;
+    try fixture.init();
+    defer fixture.deinit();
+    const app: App = .{ .icon_theme = "kosm" };
+    try app.apply(&fixture.output);
+    try testing.expect(std.mem.endsWith(u8, fixture.planned("~/.config/kdeglobals"), "[Icons]\nTheme=kosm\n# kosm:end\n"));
+    try testing.expect(std.mem.indexOf(u8, fixture.planned("~/.local/share/color-schemes/kosm.colors"), "Icons") == null);
 }
 
 test "per kosmos, the scheme is a file of the kosmos' own, selected by it and showing the theme's name" {
