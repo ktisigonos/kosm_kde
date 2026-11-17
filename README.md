@@ -24,7 +24,7 @@ start.
 `from(theme)` puts windows, tooltips and the complementary set on the theme's background role,
 views sunken and buttons and headers raised (the theme's surface steps), selections on the
 accent with readable text from the theme's `contrast.on`. Text is the foreground role, inactive
-text muted by the theme's emphasis, links the link role and visited ones purple, the error,
+text muted by the theme's emphasis, links the link and visited roles, the error,
 warning and success roles for bad news, warnings and good news, focus and hover outlines the
 accent. Focused title bars are raised.
 

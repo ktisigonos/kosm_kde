@@ -34,10 +34,9 @@ decoration_hover: ?Color = null,
 
 /// A set on `background`, `alternate` for its alternating rows, with the theme's text and
 /// state colors: text the foreground role, muted by the theme's emphasis when inactive, active
-/// text the accent; links the link role, visited ones purple; the error, warning and success
+/// text the accent; links the link and visited roles; the error, warning and success
 /// roles for bad, warning and good news; the focus and hover outlines the accent.
 pub fn on(theme: kosm.Theme, background: Color, alternate: Color) Set {
-    const palette = theme.palette;
     const foreground = theme.roles.foreground;
     return .{
         .background_normal = background,
@@ -46,7 +45,7 @@ pub fn on(theme: kosm.Theme, background: Color, alternate: Color) Set {
         .foreground_inactive = theme.variations.emphasis.muted.apply(foreground),
         .foreground_active = theme.roles.accent,
         .foreground_link = theme.roles.link,
-        .foreground_visited = palette.purple,
+        .foreground_visited = theme.roles.visited,
         .foreground_negative = theme.roles.@"error",
         .foreground_neutral = theme.roles.warning,
         .foreground_positive = theme.roles.success,
